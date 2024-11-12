@@ -4,7 +4,6 @@ import cv2
 import dlib
 from .eye import Eye
 from .calibration import Calibration
-import numpy as np
 
 
 class GazeTracking(object):
@@ -20,10 +19,6 @@ class GazeTracking(object):
         self.eye_right = None
         self.calibration = Calibration()
 
-        pts = np.float32([[0,0],[0,1],[1,0]])
-        self.Affine_M_left  = cv2.getAffineTransform(pts, pts)
-        self.Affine_M_right = cv2.getAffineTransform(pts, pts)
-
         # _face_detector is used to detect faces
         self._face_detector = dlib.get_frontal_face_detector()
 
@@ -31,10 +26,6 @@ class GazeTracking(object):
         cwd = os.path.abspath(os.path.dirname(__file__))
         model_path = os.path.abspath(os.path.join(cwd, "trained_models/shape_predictor_68_face_landmarks.dat"))
         self._predictor = dlib.shape_predictor(model_path)
-
-    def set_Affine(self,Affine_M_left,Affine_M_right):
-        self.Affine_M_left  = Affine_M_left 
-        self.Affine_M_right = Affine_M_right
 
     @property
     def pupils_located(self):
@@ -131,7 +122,6 @@ class GazeTracking(object):
         frame = self.frame.copy()
 
         if self.pupils_located:
-            # Pupils
             color = (0, 255, 0)
             x_left, y_left = self.pupil_left_coords()
             x_right, y_right = self.pupil_right_coords()
@@ -139,35 +129,5 @@ class GazeTracking(object):
             cv2.line(frame, (x_left, y_left - 5), (x_left, y_left + 5), color)
             cv2.line(frame, (x_right - 5, y_right), (x_right + 5, y_right), color)
             cv2.line(frame, (x_right, y_right - 5), (x_right, y_right + 5), color)
-
-            # Eye Region
-            color = (255,0,0)
-            for point in self.eye_left.landmark_points:
-                x, y = point
-                cv2.line(frame, (x - 5, y), (x + 5, y), color)
-                cv2.line(frame, (x, y - 5), (x, y + 5), color)
-
-            color = (0,0,255)
-            for point in self.eye_right.landmark_points:
-                x, y = point
-                cv2.line(frame, (x - 5, y), (x + 5, y), color)
-                cv2.line(frame, (x, y - 5), (x, y + 5), color)
-
-            # Eye Direction
-            color = (255, 255, 255)
-            x_orig_left  = self.eye_left.origin[0]  + self.eye_left.center[0] - 5
-            y_orig_left  = self.eye_left.origin[1]  + self.eye_left.center[1] - 5
-            x_orig_right = self.eye_right.origin[0] + self.eye_right.center[0] - 5
-            y_orig_right = self.eye_right.origin[1] + self.eye_right.center[1] - 5
-            x_orig_left  = x_orig_left.astype(np.int32)
-            y_orig_left  = y_orig_left.astype(np.int32)
-            x_orig_right = x_orig_right.astype(np.int32)
-            y_orig_right = y_orig_right.astype(np.int32)
-
-            cv2.line(frame, (x_orig_left,  y_orig_left),  (x_orig_left +(10*(x_left- x_orig_left)),  y_orig_left +(10*(y_left -y_orig_left))),  color)
-            cv2.line(frame, (x_orig_right, y_orig_right), (x_orig_right+(10*(x_right-x_orig_right)), y_orig_right+(10*(y_right-y_orig_right))), color)
-            
-
-
 
         return frame
