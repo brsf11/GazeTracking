@@ -1,5 +1,6 @@
 import cv2
-from gaze_tracking import GazeTracking
+# from gaze_tracking import GazeTracking
+from .mediapipe_gaze import mediapipe_gaze
 from .transformation import transformation_affine, transformation_perspective
 from .OpenCVWebcam import OpenCVWebcam
 import numpy as np
@@ -72,7 +73,7 @@ class EMAFilter:
 
 class TgtTracking(object):
     def __init__(self):
-        self.gaze = GazeTracking()
+        self.gaze = mediapipe_gaze()
 
         # Initial calibration setting
         self.window_frame_width           = 1700
@@ -141,10 +142,10 @@ class TgtTracking(object):
                     cv2.moveWindow("Reference", 0, 0)
 
                     if self.gaze.pupils_located:
-                        pupil_data_points_left[ calibrate_cnt,frame_cnt,0] = self.gaze.eye_left.pupil.y
-                        pupil_data_points_left[ calibrate_cnt,frame_cnt,1] = self.gaze.eye_left.pupil.x
-                        pupil_data_points_right[calibrate_cnt,frame_cnt,0] = self.gaze.eye_right.pupil.y
-                        pupil_data_points_right[calibrate_cnt,frame_cnt,1] = self.gaze.eye_right.pupil.x
+                        pupil_data_points_left[ calibrate_cnt,frame_cnt,0] = self.gaze.eye_left_pupil_y
+                        pupil_data_points_left[ calibrate_cnt,frame_cnt,1] = self.gaze.eye_left_pupil_x
+                        pupil_data_points_right[calibrate_cnt,frame_cnt,0] = self.gaze.eye_right_pupil_y
+                        pupil_data_points_right[calibrate_cnt,frame_cnt,1] = self.gaze.eye_right_pupil_x
                         frame_cnt += 1
                     # else:
                     #     pupil_data_points_left[ calibrate_cnt,frame_cnt,0] = -1
@@ -187,7 +188,7 @@ class TgtTracking(object):
         # Left eye target
         color = (0,0,0)
         if self.gaze.pupils_located:
-            dst = self.trans.transform(np.float32([self.gaze.eye_left.pupil.y, self.gaze.eye_left.pupil.x]),np.float32([self.gaze.eye_right.pupil.y,self.gaze.eye_right.pupil.x]))
+            dst = self.trans.transform(np.float32([self.gaze.eye_left_pupil_y, self.gaze.eye_left_pupil_x]),np.float32([self.gaze.eye_right_pupil_y,self.gaze.eye_right_pupil_x]))
         else:
             dst = np.int32([self.window_frame_height//2,self.window_frame_width//2])
         dst = self.filter_target.filter(dst)

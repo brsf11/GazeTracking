@@ -27,6 +27,11 @@ class GazeTracking(object):
         model_path = os.path.abspath(os.path.join(cwd, "trained_models/shape_predictor_68_face_landmarks.dat"))
         self._predictor = dlib.shape_predictor(model_path)
 
+        self.eye_left_pupil_x  = None
+        self.eye_left_pupil_y  = None
+        self.eye_right_pupil_x = None
+        self.eye_right_pupil_y = None
+
     @property
     def pupils_located(self):
         """Check that the pupils have been located"""
@@ -61,6 +66,10 @@ class GazeTracking(object):
         """
         self.frame = frame
         self._analyze()
+        self.eye_left_pupil_x  = self.eye_left.pupil.x 
+        self.eye_left_pupil_y  = self.eye_left.pupil.y 
+        self.eye_right_pupil_x = self.eye_right.pupil.x
+        self.eye_right_pupil_y = self.eye_right.pupil.y
 
     def pupil_left_coords(self):
         """Returns the coordinates of the left pupil"""
