@@ -19,7 +19,7 @@ def custom_clustering(data, threshold=0.01, max_iters=100):
         exponent = -0.5 * np.dot(np.dot(diff.T, cov_inv), diff)
         return np.exp(exponent) / np.sqrt((2 * np.pi) ** d * np.linalg.det(cov))
     
-    for iteration in range(max_iters):
+    for _ in range(max_iters):
         mean = np.mean(clean_data, axis=0)
         cov = np.cov(clean_data, rowvar=False) + 1e-6 * np.eye(d)
         
