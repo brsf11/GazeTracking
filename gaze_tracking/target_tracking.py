@@ -1,6 +1,7 @@
 import cv2
 from gaze_tracking import GazeTracking
 from .transformation import transformation_affine, transformation_perspective
+from .OpenCVWebcam import OpenCVWebcam
 import numpy as np
 import os
 
@@ -75,27 +76,16 @@ class TgtTracking(object):
 
         # Initial calibration setting
         self.window_frame_width           = 1700
-        self.window_frame_height          = 950
+        self.window_frame_height          = 1000
 
         # Transformation
         self.trans = transformation_perspective()
 
-        # Web cam
-        self.webcam = cv2.VideoCapture(0)
-        # Set Width and Height
-        self.webcam.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        self.webcam.set(cv2.CAP_PROP_FRAME_HEIGHT, 960)
-
-        # Frame rate
-        self.webcam.set(cv2.CAP_PROP_FPS, 30)
-
-        self.webcam_width  = self.webcam.get(cv2.CAP_PROP_FRAME_WIDTH)
-        self.webcam_height = self.webcam.get(cv2.CAP_PROP_FRAME_HEIGHT)
-        self.webcam_fps    = self.webcam.get(cv2.CAP_PROP_FPS)
-        # print(f'Width: {self.webcam_width}, Height: {self.webcam_height}, FPS: {self.webcam_fps}')
+        self.Camera = OpenCVWebcam(1280,960,30)
+        self.webcam_width, self.webcam_height, self.webcam_fps = self.Camera.getSettings()
 
         # Filter
-        self.filter_target = EMAFilter(alpha=0.15)
+        self.filter_target = EMAFilter(alpha=0.1)
 
     def save_calib_pupil_points(self,pupil_data_points_left,pupil_data_points_right):
         np.savetxt("Pupil_debug_left.txt",  pupil_data_points_left.reshape(-1,  pupil_data_points_left.shape[2]))
@@ -113,7 +103,7 @@ class TgtTracking(object):
         cnt = 0
         cv2.destroyAllWindows()
         while(cnt < (duration * self.webcam_fps)):
-            _, frame = self.webcam.read()
+            _, frame = self.Camera.read()
             self.gaze.refresh(frame)
             webcam_frame = self.gaze.annotated_frame()
             cv2.imshow("webcam", webcam_frame)
@@ -136,7 +126,7 @@ class TgtTracking(object):
             for calibrate_cnt in range(init_calibrate_point_num):
                 frame_cnt = 0
                 while(frame_cnt < self.trans.init_calibration_frame_count):
-                    _, frame = self.webcam.read()
+                    _, frame = self.Camera.read()
                     self.gaze.refresh(frame)
 
                     # Render reference frame
@@ -155,16 +145,17 @@ class TgtTracking(object):
                         pupil_data_points_left[ calibrate_cnt,frame_cnt,1] = self.gaze.eye_left.pupil.x
                         pupil_data_points_right[calibrate_cnt,frame_cnt,0] = self.gaze.eye_right.pupil.y
                         pupil_data_points_right[calibrate_cnt,frame_cnt,1] = self.gaze.eye_right.pupil.x
-                    else:
-                        pupil_data_points_left[ calibrate_cnt,frame_cnt,0] = -1
-                        pupil_data_points_left[ calibrate_cnt,frame_cnt,1] = -1
-                        pupil_data_points_right[calibrate_cnt,frame_cnt,0] = -1
-                        pupil_data_points_right[calibrate_cnt,frame_cnt,1] = -1
+                        frame_cnt += 1
+                    # else:
+                    #     pupil_data_points_left[ calibrate_cnt,frame_cnt,0] = -1
+                    #     pupil_data_points_left[ calibrate_cnt,frame_cnt,1] = -1
+                    #     pupil_data_points_right[calibrate_cnt,frame_cnt,0] = -1
+                    #     pupil_data_points_right[calibrate_cnt,frame_cnt,1] = -1
 
 
                     if cv2.waitKey(1) == ord('q'):
                         break
-                    frame_cnt += 1
+                    
             
             # After Data collection for all calibration pins, try to get the affine matrix
             # Calculate the pupil_points
@@ -188,7 +179,7 @@ class TgtTracking(object):
         cv2.destroyAllWindows()
     
     def refresh(self):
-        _, frame = self.webcam.read()
+        _, frame = self.Camera.read()
 
         self.gaze.refresh(frame)
         ref_frame = np.ones((self.window_frame_height, self.window_frame_width), np.uint8) * 255
@@ -206,7 +197,3 @@ class TgtTracking(object):
 
         cv2.imshow("Reference", ref_frame)
         cv2.moveWindow("Reference", 0, 0)
-
-        
-    def __del__(self):
-        self.webcam.release()
