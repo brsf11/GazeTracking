@@ -76,8 +76,8 @@ class TgtTracking(object):
         self.gaze = mediapipe_gaze()
 
         # Initial calibration setting
-        self.window_frame_width           = 1700
-        self.window_frame_height          = 1000
+        self.window_frame_width           = 2560
+        self.window_frame_height          = 1500
 
         # Transformation
         self.trans = transformation_perspective()
@@ -86,7 +86,10 @@ class TgtTracking(object):
         self.webcam_width, self.webcam_height, self.webcam_fps = self.Camera.getSettings()
 
         # Filter
-        self.filter_target = EMAFilter(alpha=0.1)
+        self.filter_target = EMAFilter(alpha=0.08)
+
+        self.target_x = None
+        self.target_y = None
 
     def save_calib_pupil_points(self,pupil_data_points_left,pupil_data_points_right):
         np.savetxt("Pupil_debug_left.txt",  pupil_data_points_left.reshape(-1,  pupil_data_points_left.shape[2]))
@@ -179,7 +182,7 @@ class TgtTracking(object):
             calibrate_done = self.trans.init_calibrate(pupil_points_left,pupil_points_right,init_calibrating_points)
         cv2.destroyAllWindows()
     
-    def refresh(self):
+    def refresh(self,Display=True):
         _, frame = self.Camera.read()
 
         self.gaze.refresh(frame)
@@ -193,8 +196,10 @@ class TgtTracking(object):
             dst = np.int32([self.window_frame_height//2,self.window_frame_width//2])
         dst = self.filter_target.filter(dst)
         x, y  = int(dst[1]), int(dst[0])
-        cv2.line(ref_frame, (x - 5, y), (x + 5, y), color)
-        cv2.line(ref_frame, (x, y - 5), (x, y + 5), color)
+        self.target_x, self.target_y = x, y
+        if Display:
+            cv2.line(ref_frame, (x - 5, y), (x + 5, y), color)
+            cv2.line(ref_frame, (x, y - 5), (x, y + 5), color)
 
-        cv2.imshow("Reference", ref_frame)
-        cv2.moveWindow("Reference", 0, 0)
+            cv2.imshow("Reference", ref_frame)
+            cv2.moveWindow("Reference", 0, 0)
